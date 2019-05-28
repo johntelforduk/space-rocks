@@ -1,9 +1,16 @@
 # space-rocks
 Space Rocks game.
 
+#### Installation
+To install necessary modules,
+
 `pip install pygame`
 
+#### Running it
+To run the full-colour game,
 
+`python game.py`
 
+To run it with retro, monochrome graphics,
 
-Debugging elements are shown in red.
+`python game_monochrome.py`
