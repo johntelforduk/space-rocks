@@ -212,13 +212,9 @@ class Game:
 
     def __init__(self, debug, monochrome, target_fps):
 
-        self.debug = debug
-        self.monochrome = monochrome
-        self.target_fps = target_fps
-
-        # XXX
-        self.ship_angle = 0
-
+        self.debug = debug                  # True=logging sent to stdout, and current FPS displayed on screen.
+        self.monochrome = monochrome        # True=old style graphics used for rocks, etc.
+        self.target_fps = target_fps        # Some game animations use target Frames Per Second to control their pace.
 
         # Initialize the game engine.
         pygame.init()
@@ -232,7 +228,26 @@ class Game:
         self.screen_size = [800, 600]
         self.screen_centre = [int(self.screen_size[0] / 2), int(self.screen_size[1] / 2)]
 
+        self.screen = pygame.display.set_mode(self.screen_size)
+        self.clock = pygame.time.Clock()
 
+        pygame.font.init()                          # Start the Pygame text rendering system.
+        self.myfont = pygame.font.SysFont('Courier New', 20)
+
+        pygame.display.set_caption('Space Rocks')   # The game window title.
+
+        pygame.mixer.init()                         # Start the Pygame sound system.
+        pygame.mixer.set_num_channels(2)            # One channel for laser gun fires, one for explosions.
+
+        # Get some game sound ready, and allocate sound channels for them.
+        self.explosion_sound = pygame.mixer.Sound('assets/110115__ryansnook__small-explosion.wav')
+        self.laser_sound = pygame.mixer.Sound('assets/341235__sharesynth__laser01.wav')
+        self.explosion_channel = pygame.mixer.Channel(0)
+        self.laser_channel = pygame.mixer.Channel(1)
+
+        # Border greater than width of largest possible rock. This ensures that when a rock is removed for being
+        # outside of the screen plus border, we can be sure that all of the rock is off screen. If the border wasn't
+        # wide enough rocks that are drifting offscreen could be removed while part of them is still onscreen.
         self.border = 100
 
         # These are the edges of the zone where graphical objects are born and die.
@@ -241,15 +256,7 @@ class Game:
         self.right_dead = self.screen_size[0] + self.border
         self.bottom_dead = self.screen_size[1] + self.border
 
-        self.screen = pygame.display.set_mode(self.screen_size)
-        self.clock = pygame.time.Clock()
-
-        pygame.font.init()  # you have to call this at the start,
-        # if you want to use this module.
-        self.myfont = pygame.font.SysFont('Courier New', 20)
-
-        pygame.display.set_caption('Space Rocks')
-
+        # Create some rocks for start of game.
         num_rocks = 20
         self.rocks = []
         for r in range(num_rocks):
@@ -257,7 +264,10 @@ class Game:
             new_rock.place_on_side_of_screen(self)
             self.rocks.append(new_rock)
 
-        self.bullets = []
+        self.bullets = []                   # Bullets in flight will be appended to this list when they are fired.
+
+        # TODO Make this part of the Ship class / object.
+        self.ship_angle = 0
 
 
     def draw_text(self, text, x, y, colour):
@@ -290,12 +300,9 @@ class Game:
 
             self.clock.tick(self.target_fps)
 
-
-
             for event in pygame.event.get():  # User did something
                 if event.type == pygame.QUIT:  # If user clicked close
                     done = True  # Flag that we are done so we exit this loop
-
 
             # TODO - put in own class 'key_handling'
             keys = pygame.key.get_pressed()
@@ -305,6 +312,9 @@ class Game:
                 self.ship_angle -= 10
             if keys[pygame.K_z] and len(self.bullets) < 10:
                 self.bullets.append(Bullet(self, self.screen_centre, self.ship_angle))
+
+                # TODO Put this sound command in its own method.
+                self.laser_channel.play(self.laser_sound)
 
             for b in self.bullets:
                 b.move()
@@ -326,6 +336,9 @@ class Game:
                         if r.collision:
                             r.exploding = True
                             b.kill = True                   # This bullet has killed a rock, so it must be killed itself too.
+
+                            # TODO put this sound command in a method.
+                            self.explosion_channel.play(self.explosion_sound)
 
                 # TODO need to reintroduce check whether rock has hit the spaceship.
 #                r.check_collision(self.screen_centre)
