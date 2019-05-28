@@ -104,7 +104,7 @@ class Rock:
     def check_collision(self, vertex):
         self.collision = False                      # Start bu assuming that vertex is outside all triangles.
 
-        # Before doing the triangle analysis, do a simple clipping test.
+        # Before doing the triangle analysis (which is time consuming), do a simpler clipping test.
         # Imagine a square around the centre of the rock. Is the vertex inside that square?
         if (vertex[0] > self.coords[0] - self.radius - 15           # 15 is the most that can randomly be added to a vertex
         and vertex[0] < self.coords[0] + self.radius + 15           # at the time that the rock was created.
@@ -112,7 +112,7 @@ class Rock:
         and vertex[1] < self.coords[1] + self.radius + 15):
 
             # If the vertex is inside the square, then it is worth checking each triangle that makes up the
-            # rock in turn, to see if it is inside any of them.
+            # rock in turn, to see if the vertex is inside any of them.
             prev_vertex = self.vertices[-1]  # This is so we have 3 points for first triangle.
 
             for triangle_vertex in self.vertices:

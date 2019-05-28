@@ -3,18 +3,18 @@
 import math
 
 
-# Convert vertex with float co-oridinates into integer coordinates.
-# Needed because some pygame functions need integer coords.
+# Convert vertex with float coordinates into integer coordinates.
+# Needed because some Pygame functions need integer coords.
 def integer_coord(vertex):
     int_x = round(vertex[0])
     int_y = round(vertex[1])
     return [int_x, int_y]
 
 
-# Move, or slide, a coordincate in 2d space.
+# Move - or slide - a coordincate in 2d space.
 def translation(vertex, delta):
     [vertex_x, vertex_y] = vertex
-    [delta_x, delta_y] = delta
+    [delta_x, delta_y] = delta                          # Delta is the amount to move the vertex by.
     return [vertex_x + delta_x, vertex_y + delta_y]
 
 
@@ -24,24 +24,7 @@ def scale(vertex, scale_factor):
     [vertex_x, vertex_y] = vertex
     return [vertex_x * scale_factor, vertex_y * scale_factor]
 
-
-# Scale a vertex away from a point, which is other than the origin.
-#
-# Method has 3 steps,
-# 1. Move the vertex so that centre of rotations is now the origin.
-# 2. Scale away from the origin.
-# 3. Do the opposite of move in Step 1.
-def scale_from_a_point(vertex, point, scale_factor):
-    [point_x, point_y] = point
-
-    moved_vertex = translation(vertex, [-point_x, -point_y])                    # Step 1.
-    scaled_vertex = scale(moved_vertex, scale_factor)                           # Step 2.
-    re_moved_vertex = translation(scaled_vertex, point)                        # Step 3.
-
-    return re_moved_vertex
-
-
-
+# For explanation of the maths, see,
 # https://en.wikipedia.org/wiki/Rotation_of_axes#Derivation
 def rotate_around_origin(vertex, rotation_degrees):
     [vertex_x, vertex_y] = vertex
@@ -51,7 +34,8 @@ def rotate_around_origin(vertex, rotation_degrees):
            - vertex_x * math.sin(rotation_radians) + vertex_y * math.cos(rotation_radians)
            ]
 
-# Rotate a vertex around a point (pivot vertex), which is other than the origin.
+
+# Rotate a vertex around some arbitrary pivot point.
 #
 # Method has 3 steps,
 # 1. Move the vertex so that centre of rotations is now the origin.
@@ -66,66 +50,19 @@ def rotate_around_a_point(vertex, pivot, rotation_degrees):
 
     return re_moved_vertex
 
-# Refactored from,
+
+# The next two functions are Based upon,
 # https://www.geeksforgeeks.org/check-whether-a-given-point-lies-inside-a-triangle-or-not/
 
-# A utility function to calculate area
-# of triangle formed by (x1, y1),
-# (x2, y2) and (x3, y3)
-
-# def area(x1, y1, x2, y2, x3, y3):
-#     return abs((x1 * (y2 - y3) + x2 * (y3 - y1)
-#                 + x3 * (y1 - y2)) / 2.0)
+# A function to calculate area of triangle formed by 3 vertices v1, v2, v3.
 
 def area_triangle(v1, v2, v3):
-    # x1=v1[0]
-    # y1=v1[1]
-    # x2=v2[0]
-    # y2=v2[1]
-    # x3=v3[0]
-    # y3=v3[1]
     return (abs((v1[0] * (v2[1] - v3[1]) + v2[0] * (v3[1] - v1[1])
                 + v3[0] * (v1[1] - v2[1])) / 2.0))
 
 
-
-# A function to check whether point P(x, y)
-# lies inside the triangle formed by
-# A(x1, y1), B(x2, y2) and C(x3, y3)
-
-
-# def isInside(x1, y1, x2, y2, x3, y3, x, y):
-#     # Calculate area of triangle ABC
-#     A = area(x1, y1, x2, y2, x3, y3)
-#
-#     # Calculate area of triangle PBC
-#     A1 = area(x, y, x2, y2, x3, y3)
-#
-#     # Calculate area of triangle PAC
-#     A2 = area(x1, y1, x, y, x3, y3)
-#
-#     # Calculate area of triangle PAB
-#     A3 = area(x1, y1, x2, y2, x, y)
-#
-#     # Check if sum of A1, A2 and A3
-#     # is same as A
-#     if (A == A1 + A2 + A3):
-#         return True
-#     else:
-#         return False
-
-# Is vertex v inside the triangle v1, v2, v3?
+# Is vertex v inside the triangle formed by vertices v1, v2, v3?
 def is_inside_triangle(v, v1, v2, v3):
-    # x=v[0]
-    # y=v[1]
-    # x1=v1[0]
-    # y1=v1[1]
-    # x2=v2[0]
-    # y2=v2[1]
-    # x3=v3[0]
-    # y3=v3[1]
-
-    # Calculate area of triangle ABC
     a = area_triangle(v1, v2, v3)
 
     # Calculate area of triangle PBC
