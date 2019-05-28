@@ -3,6 +3,14 @@
 import math
 
 
+# Convert vertex with float co-oridinates into integer coordinates.
+# Needed because some pygame functions need integer coords.
+def integer_coord(vertex):
+    int_x = round(vertex[0])
+    int_y = round(vertex[1])
+    return [int_x, int_y]
+
+
 # Move, or slide, a coordincate in 2d space.
 def translation(vertex, delta):
     [vertex_x, vertex_y] = vertex

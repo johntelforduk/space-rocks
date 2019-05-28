@@ -3,8 +3,9 @@
 import cartesian_coordinates as cc
 import pygame                           # 2d games engine.
 import random
-import datetime
+import datetime                         # Needed for tracing.
 
+# If debugging is turned on, send the parm message to stdout.
 def trace(vis, message):
     if vis.debug:
         print(datetime.datetime.now(), message)
@@ -52,8 +53,10 @@ class Rock:
         self.exploding = False
         self.explosion_step = 0
 
-#        brightness = random.randint(60, 120)
-        self.colour = (random.randint(60, 200), random.randint(60, 200), random.randint(60, 200))
+        if vis.monochrome:
+            self.colour = vis.WHITE
+        else:
+            self.colour = (random.randint(60, 200), random.randint(60, 200), random.randint(60, 200))
 
         trace(vis, self.size + ' rock created.')
 
@@ -89,6 +92,7 @@ class Rock:
             self.drift = [10 * random.randint(-4, -2) / vis.target_fps,
                           10 * random.randint(-3, 3) / vis.target_fps]
 
+    # Has the rock strayed outside of the game screen? If so, it will be marked to be killed off.
     def check_onscreen(self, vis):
         if (self.coords[0] < vis.left_dead
                 or self.coords[0] > vis.right_dead
@@ -100,24 +104,33 @@ class Rock:
     def check_collision(self, vertex):
         self.collision = False                      # Start bu assuming that vertex is outside all triangles.
 
-        prev_vertex = self.vertices[-1]  # This is so we have 3 points for first triangle.
+        # Before doing the triangle analysis, do a simple clipping test.
+        # Imagine a square around the centre of the rock. Is the vertex inside that square?
+        if (vertex[0] > self.coords[0] - self.radius - 15           # 15 is the most that can randomly be added to a vertex
+        and vertex[0] < self.coords[0] + self.radius + 15           # at the time that the rock was created.
+        and vertex[1] > self.coords[1] - self.radius - 15
+        and vertex[1] < self.coords[1] + self.radius + 15):
 
-        for triangle_vertex in self.vertices:
-            if cc.is_inside_triangle(vertex, self.position(prev_vertex), self.position(triangle_vertex), self.coords):
-                self.collision = True
-            prev_vertex = triangle_vertex
+            # If the vertex is inside the square, then it is worth checking each triangle that makes up the
+            # rock in turn, to see if it is inside any of them.
+            prev_vertex = self.vertices[-1]  # This is so we have 3 points for first triangle.
+
+            for triangle_vertex in self.vertices:
+                if cc.is_inside_triangle(vertex, self.position(prev_vertex), self.position(triangle_vertex), self.coords):
+                    self.collision = True
+                prev_vertex = triangle_vertex
 
     def position(self, vertex):
         rotated = cc.rotate_around_origin(vertex, self.rotation)
         return cc.translation(rotated, self.coords)
 
     def explode(self, vis):
-        if self.explosion_step < 2 * vis.target_fps:    # Higher FPS mean, more animation steps for explosion!
+        if self.explosion_step < vis.target_fps:    # Higher FPS mean, more animation steps for explosion!
             self.explosion_step += 1
         else:
             self.kill = True                        # Explosion animation is over, so kill off the rock.
 
-        if self.explosion_step == int(vis.target_fps / 4):  # Quarter way through the explosion animation, maybe spawn new rocks.
+        if self.explosion_step == int(0.5 * vis.target_fps):  # Half way through the explosion animation, maybe spawn new rocks.
             if self.size in ['Large', 'Medium']:
                 for i in range(2):
                     if self.size == 'Large':
@@ -141,22 +154,25 @@ class Rock:
 
         for vertex in self.vertices:
             if not self.exploding:
-#                pygame.draw.line(vis.screen, vis.WHITE, self.position(prev_vertex), self.position(vertex), 1)
+                if vis.monochrome:
+                    pygame.draw.line(vis.screen, vis.WHITE, self.position(prev_vertex), self.position(vertex), 1)
 
-                # XXX refactor to draw whole polygon in one go, rather than drawing a number of triangles.
-
-                triangle = []
-                triangle.append(self.position(prev_vertex))
-                triangle.append(self.position(vertex))
-                triangle.append(self.coords)
-                pygame.draw.polygon(vis.screen, self.colour, triangle, 0)
+                # TODO refactor to draw whole polygon in one go, rather than drawing a number of triangles.
+                else:
+                    triangle = []
+                    triangle.append(self.position(prev_vertex))
+                    triangle.append(self.position(vertex))
+                    triangle.append(self.coords)
+                    pygame.draw.polygon(vis.screen, self.colour, triangle, 0)
 
             else:
                 # Higher FPS mean more explosion steps, so lower speed of explosion per step.
                 scaled_vertex = cc.scale(vertex, 5 * self.explosion_step / vis.target_fps)
                 [x, y] = self.position(scaled_vertex)
-                pygame.draw.circle(vis.screen, self.colour, [int(x), int(y)], 4, 4)
-
+                if vis.monochrome:
+                    pygame.draw.circle(vis.screen, vis.WHITE, [int(x), int(y)], 1, 1)
+                else:
+                    pygame.draw.circle(vis.screen, self.colour, [int(x), int(y)], 4, 4)
 
             prev_vertex = vertex
 
@@ -165,12 +181,44 @@ class Rock:
         self.coords = cc.translation(self.coords, self.drift)
 
 
+class Bullet:
+    def __init__(self, vis, origin, angle):
+
+        self.coords = origin
+        self.angle = angle
+        self.drift = cc.rotate_around_origin([0, 20], self.angle)        # Incremental drift this bullet will do each tick.
+
+        self.kill = False
+
+    def draw(self, vis):
+        if vis.monochrome:
+            pygame.draw.circle(vis.screen, vis.WHITE, cc.integer_coord(self.coords), 1, 1)
+        else:
+            pygame.draw.circle(vis.screen, vis.RED, cc.integer_coord(self.coords), 2, 2)
+
+    def move(self):
+        self.coords = cc.translation(self.coords, self.drift)
+
+    def check_onscreen(self, vis):
+        if (self.coords[0] < vis.left_dead
+                or self.coords[0] > vis.right_dead
+                or self.coords[1] < vis.top_dead
+                or self.coords[1] > vis.bottom_dead):
+            self.kill = True
+
+
+
 class Visualise:
 
-    def __init__(self, debug, target_fps):
+    def __init__(self, debug, monochrome, target_fps):
 
         self.debug = debug
+        self.monochrome = monochrome
         self.target_fps = target_fps
+
+        # XXX
+        self.ship_angle = 0
+
 
         # Initialize the game engine.
         pygame.init()
@@ -202,8 +250,6 @@ class Visualise:
 
         pygame.display.set_caption('Space Rocks')
 
-
-
         num_rocks = 20
         self.rocks = []
         for r in range(num_rocks):
@@ -211,54 +257,80 @@ class Visualise:
             new_rock.place_on_side_of_screen(self)
             self.rocks.append(new_rock)
 
+        self.bullets = []
 
 
     def draw_text(self, text, x, y, colour):
         textsurface = self.myfont.render(text, False, colour)
         self.screen.blit(textsurface, (x, y))
 
-
-
+    # This one method coordinates the drawing of all of the graphical elements in the game.
     def draw_all_elements(self):
-        # Clear the screen and set the screen background
+        # Clear the screen and set the screen background.
         self.screen.fill(self.BLACK)
 
-        for r in self.rocks:
+        for r in self.rocks:                    # Draw each rock.
             r.draw(self)
 
+        for b in self.bullets:                  # Draw each bullet.
+            b.draw(self)
 
         if self.debug:
-            pygame.draw.circle(self.screen, self.RED, self.screen_centre, 2, 2)
+#            pygame.draw.circle(self.screen, self.RED, self.screen_centre, 2, 2)
 
             self.draw_text('FPS = ' + str(round(self.clock.get_fps())), 10, 10, self.WHITE)
 
-            for r in self.rocks:
-                if r.collision:
-                    self.draw_text('Collision', 10, 35, self.RED)
-
-
         pygame.display.flip()
 
-    # Do animation of all statuses, showing car going around the track.
     def animate(self):
         # Loop until the user clicks the close button.
         done = False
-        # clock = pygame.time.Clock()
 
         while not done:
 
             self.clock.tick(self.target_fps)
 
+
+
             for event in pygame.event.get():  # User did something
                 if event.type == pygame.QUIT:  # If user clicked close
                     done = True  # Flag that we are done so we exit this loop
 
+
+            # TODO - put in own class 'key_handling'
+            keys = pygame.key.get_pressed()
+            if keys[pygame.K_LEFT]:
+                self.ship_angle += 10
+            if keys[pygame.K_RIGHT]:
+                self.ship_angle -= 10
+            if keys[pygame.K_z] and len(self.bullets) < 10:
+                self.bullets.append(Bullet(self, self.screen_centre, self.ship_angle))
+
+            for b in self.bullets:
+                b.move()
+                b.check_onscreen(self)
+                if b.kill:
+                    self.bullets.remove(b)
+                    trace(self, 'Bullet removed, bullets left=' + str(len(self.bullets)))
+
+
+
             for r in self.rocks:
                 r.move()
                 r.check_onscreen(self)
-                r.check_collision(self.screen_centre)
-                if r.collision:
-                    r.exploding = True
+
+                # Check whether this rock has been hit by a bullet.
+                if not r.exploding:
+                    for b in self.bullets:
+                        r.check_collision(b.coords)
+                        if r.collision:
+                            r.exploding = True
+                            b.kill = True                   # This bullet has killed a rock, so it must be killed itself too.
+
+                # TODO need to reintroduce check whether rock has hit the spaceship.
+#                r.check_collision(self.screen_centre)
+#                 if r.collision:
+#                     r.exploding = True
 
                 # This rock is exploding, so do the steps of the explosion animation - including possibly, creating
                 # child rocks.
