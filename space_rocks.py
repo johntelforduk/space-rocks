@@ -13,7 +13,7 @@ def trace(vis, message):
 
 class Rock:
 
-    def __init__(self, vis, size):
+    def __init__(self, game, size):
 
         self.size = size
         self.vertices = []
@@ -28,7 +28,7 @@ class Rock:
 
         self.rotation = 0                                   # Current rotation of the rock in degrees.
 
-        max_rotation_velocity = round(100 / vis.target_fps)
+        max_rotation_velocity = round(100 / game.target_fps)
         self.rotation_speed = random.randint(- max_rotation_velocity, max_rotation_velocity) # Degrees per tick
         if self.rotation_speed == 0:                         # No rotation would look boring.
             self.rotation_speed = 1
@@ -53,51 +53,51 @@ class Rock:
         self.exploding = False
         self.explosion_step = 0
 
-        if vis.monochrome:
-            self.colour = vis.WHITE
+        if game.monochrome:
+            self.colour = game.WHITE
         else:
             self.colour = (random.randint(60, 200), random.randint(60, 200), random.randint(60, 200))
 
-        trace(vis, self.size + ' rock created.')
+        trace(game, self.size + ' rock created.')
 
-    def place_on_side_of_screen(self, vis):
+    def place_on_side_of_screen(self, game):
 
         start_side = random.randint(1, 4)                   # 1=Top, 2=Bottom, 3=Left, 4=Right
         if start_side == 1:                                 # From the top of screen.
-            self.coords = [random.randint(vis.border, vis.screen_size[0] - vis.border), vis.top_dead]
+            self.coords = [random.randint(game.border, game.screen_size[0] - game.border), game.top_dead]
 
-            if self.coords[0] <= vis.screen_size[0] / 2:    # Left hand side of top of screen.
-                self.drift = [10 * random.randint(1, 3) / vis.target_fps,
-                              10 * random.randint(2, 4) / vis.target_fps]   # So drift rightwards and downwards.
+            if self.coords[0] <= game.screen_size[0] / 2:    # Left hand side of top of screen.
+                self.drift = [10 * random.randint(1, 3) / game.target_fps,
+                              10 * random.randint(2, 4) / game.target_fps]   # So drift rightwards and downwards.
             else:
-                self.drift = [10 * random.randint(-3, -1) / vis.target_fps,
-                              10 * random.randint(2, 4) / vis.target_fps]     # Otherwise drift leftwards and downwards.
+                self.drift = [10 * random.randint(-3, -1) / game.target_fps,
+                              10 * random.randint(2, 4) / game.target_fps]     # Otherwise drift leftwards and downwards.
 
         if start_side == 2:                                 # Bottom
-            self.coords = [random.randint(vis.border, vis.screen_size[0] - vis.border), vis.bottom_dead]
+            self.coords = [random.randint(game.border, game.screen_size[0] - game.border), game.bottom_dead]
 
-            if self.coords[0] <= vis.screen_size[0] / 2:    # Left hand side of top of screen.
-                self.drift = [10 * random.randint(1, 3) / vis.target_fps,
-                              10 * random.randint(-4, -2) / vis.target_fps]   # So drift rightwards and upwards.
+            if self.coords[0] <= game.screen_size[0] / 2:    # Left hand side of top of screen.
+                self.drift = [10 * random.randint(1, 3) / game.target_fps,
+                              10 * random.randint(-4, -2) / game.target_fps]   # So drift rightwards and upwards.
             else:
                 self.drift = [random.randint(-3, -1), random.randint(-4, -2)]     # Otherwise drift leftwards and upwards.
 
         if start_side == 3:
             self.coords = [-100, random.randint(200, 400)]
-            self.drift = [10 * random.randint(2, 4) / vis.target_fps,
-                          10 * random.randint(-3, 3) / vis.target_fps]
+            self.drift = [10 * random.randint(2, 4) / game.target_fps,
+                          10 * random.randint(-3, 3) / game.target_fps]
 
         if start_side == 4:
             self.coords = [900, random.randint(200, 400)]
-            self.drift = [10 * random.randint(-4, -2) / vis.target_fps,
-                          10 * random.randint(-3, 3) / vis.target_fps]
+            self.drift = [10 * random.randint(-4, -2) / game.target_fps,
+                          10 * random.randint(-3, 3) / game.target_fps]
 
     # Has the rock strayed outside of the game screen? If so, it will be marked to be killed off.
-    def check_onscreen(self, vis):
-        if (self.coords[0] < vis.left_dead
-                or self.coords[0] > vis.right_dead
-                or self.coords[1] < vis.top_dead
-                or self.coords[1] > vis.bottom_dead):
+    def check_onscreen(self, game):
+        if (self.coords[0] < game.left_dead
+                or self.coords[0] > game.right_dead
+                or self.coords[1] < game.top_dead
+                or self.coords[1] > game.bottom_dead):
             self.kill = True
 
     # Method is to check whether the vertex is inside any of the triangles that make up the rock.
@@ -124,38 +124,38 @@ class Rock:
         rotated = cc.rotate_around_origin(vertex, self.rotation)
         return cc.translation(rotated, self.coords)
 
-    def explode(self, vis):
-        if self.explosion_step < vis.target_fps:    # Higher FPS mean, more animation steps for explosion!
+    def explode(self, game):
+        if self.explosion_step < game.target_fps:    # Higher FPS mean, more animation steps for explosion!
             self.explosion_step += 1
         else:
             self.kill = True                        # Explosion animation is over, so kill off the rock.
 
-        if self.explosion_step == int(0.5 * vis.target_fps):  # Half way through the explosion animation, maybe spawn new rocks.
+        if self.explosion_step == int(0.5 * game.target_fps):  # Half way through the explosion animation, maybe spawn new rocks.
             if self.size in ['Large', 'Medium']:
                 for i in range(2):
                     if self.size == 'Large':
-                        new_rock = Rock(vis, 'Medium')
+                        new_rock = Rock(game, 'Medium')
                     else:
-                        new_rock = Rock(vis, 'Small')
+                        new_rock = Rock(game, 'Small')
 
                     # Give it position that is near it's parent.
                     new_rock.coords = cc.translation(self.coords, [random.randint(-25, 25), random.randint(-25, 25)])
 
-                    new_drift_x = self.drift[0] + 10 * random.randint(-1, 1) / vis.target_fps     # New rocks's drift will be similar to
-                    new_drist_y = self.drift[1] + 10 * random.randint(-1, 1) / vis.target_fps    # parent.
+                    new_drift_x = self.drift[0] + 10 * random.randint(-1, 1) / game.target_fps     # New rocks's drift will be similar to
+                    new_drist_y = self.drift[1] + 10 * random.randint(-1, 1) / game.target_fps    # parent.
 
                     new_rock.drift = [new_drift_x, new_drist_y]
 
-                    vis.rocks.append(new_rock)                              # Add the new rocks to the game.
+                    game.rocks.append(new_rock)                              # Add the new rocks to the game.
 
 
-    def draw(self, vis):
+    def draw(self, game):
         prev_vertex = self.vertices[-1]                     # This will make it a complete polygon.
 
         for vertex in self.vertices:
             if not self.exploding:
-                if vis.monochrome:
-                    pygame.draw.line(vis.screen, vis.WHITE, self.position(prev_vertex), self.position(vertex), 1)
+                if game.monochrome:
+                    pygame.draw.line(game.screen, game.WHITE, self.position(prev_vertex), self.position(vertex), 1)
 
                 # TODO refactor to draw whole polygon in one go, rather than drawing a number of triangles.
                 else:
@@ -163,16 +163,16 @@ class Rock:
                     triangle.append(self.position(prev_vertex))
                     triangle.append(self.position(vertex))
                     triangle.append(self.coords)
-                    pygame.draw.polygon(vis.screen, self.colour, triangle, 0)
+                    pygame.draw.polygon(game.screen, self.colour, triangle, 0)
 
             else:
                 # Higher FPS mean more explosion steps, so lower speed of explosion per step.
-                scaled_vertex = cc.scale(vertex, 5 * self.explosion_step / vis.target_fps)
+                scaled_vertex = cc.scale(vertex, 5 * self.explosion_step / game.target_fps)
                 [x, y] = self.position(scaled_vertex)
-                if vis.monochrome:
-                    pygame.draw.circle(vis.screen, vis.WHITE, [int(x), int(y)], 1, 1)
+                if game.monochrome:
+                    pygame.draw.circle(game.screen, game.WHITE, [int(x), int(y)], 1, 1)
                 else:
-                    pygame.draw.circle(vis.screen, self.colour, [int(x), int(y)], 4, 4)
+                    pygame.draw.circle(game.screen, self.colour, [int(x), int(y)], 4, 4)
 
             prev_vertex = vertex
 
@@ -182,7 +182,7 @@ class Rock:
 
 
 class Bullet:
-    def __init__(self, vis, origin, angle):
+    def __init__(self, game, origin, angle):
 
         self.coords = origin
         self.angle = angle
@@ -190,25 +190,25 @@ class Bullet:
 
         self.kill = False
 
-    def draw(self, vis):
-        if vis.monochrome:
-            pygame.draw.circle(vis.screen, vis.WHITE, cc.integer_coord(self.coords), 1, 1)
+    def draw(self, game):
+        if game.monochrome:
+            pygame.draw.circle(game.screen, game.WHITE, cc.integer_coord(self.coords), 1, 1)
         else:
-            pygame.draw.circle(vis.screen, vis.RED, cc.integer_coord(self.coords), 2, 2)
+            pygame.draw.circle(game.screen, game.RED, cc.integer_coord(self.coords), 2, 2)
 
     def move(self):
         self.coords = cc.translation(self.coords, self.drift)
 
-    def check_onscreen(self, vis):
-        if (self.coords[0] < vis.left_dead
-                or self.coords[0] > vis.right_dead
-                or self.coords[1] < vis.top_dead
-                or self.coords[1] > vis.bottom_dead):
+    def check_onscreen(self, game):
+        if (self.coords[0] < game.left_dead
+                or self.coords[0] > game.right_dead
+                or self.coords[1] < game.top_dead
+                or self.coords[1] > game.bottom_dead):
             self.kill = True
 
 
 
-class Visualise:
+class Game:
 
     def __init__(self, debug, monochrome, target_fps):
 

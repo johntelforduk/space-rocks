@@ -1,4 +1,8 @@
+# Run the game in debug mode.
+
 import space_rocks
 
-game = space_rocks.Visualise(True, False, 25)
-game.animate()
+this_game = space_rocks.Game(True,      # Debug mode?
+                             False,     # Monochrome mode?
+                             25)        # Target FPS
+this_game.animate()
