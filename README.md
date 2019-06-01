@@ -34,6 +34,6 @@ Player 2
 #### Sound Effects
 Used under creative commons license.
 
-https://freesound.org/people/sharesynth/sounds/341235/
-https://freesound.org/people/ryansnook/sounds/110115/
+https://freesound.org/people/sharesynth/sounds/341235/  
+https://freesound.org/people/ryansnook/sounds/110115/  
 https://freesound.org/people/tommccann/sounds/235968/
