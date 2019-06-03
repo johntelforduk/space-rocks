@@ -1,7 +1,9 @@
 # space-rocks
 
+![1 player game](https://github.com/johntelforduk/space-rocks/blob/master/screenshots/screenshot_0003.png)
+
 #### Installation
-To install necessary modules,
+To install the necessary game module,
 
 `pip install pygame`
 
@@ -14,8 +16,6 @@ To run the game,
 In menu,
 
 ```
-C = Colour
-M = Monochrome (old school, vector graphics)
 1 = Play 1 player game
 2 = Play 2 player game 
 ```
@@ -27,10 +27,14 @@ X = Rotate clockwise
 A = Fire gun
 
 Player 2
-← = Rotate anticlockwise
-→ = Rotate clockwise
-/ = Fire gun
+← (left cursor key) = Rotate anticlockwise
+→ (right cursor key) = Rotate clockwise
+/ (forward slash key) = Fire gun
+
+ESC = Return to menu
 ```
+![Main menu](https://github.com/johntelforduk/space-rocks/blob/master/screenshots/screenshot_0001.png)
+
 #### Sound Effects
 Used under creative commons license.
 
