@@ -20,6 +20,7 @@ def trace(config, message):
 class Rock:
 
     def __init__(self, config, size):
+        assert size in ['Small', 'Medium', 'Large']
 
         self.size = size                                    # Size of rock to be created, "Large", "Medium", "Small"
         self.vertices = []                                  # List of vertices of the rock, centered around origin.
@@ -65,6 +66,8 @@ class Rock:
     def place_on_side_of_screen(self, config):
 
         start_side = random.randint(1, 4)                   # 1=Top, 2=Bottom, 3=Left, 4=Right
+        assert start_side in [1, 2, 3, 4]
+
         if start_side == 1:                                 # From the top of screen.
             # TODO Try simplifying the first two in same style as second two.
 
@@ -391,6 +394,7 @@ class Game:
             new_rock.place_on_side_of_screen(self.config)
             self.rocks.append(new_rock)
 
+        assert self.config.num_players in [1, 2]
         self.players = []                               # List of players.
         for n in range(self.config.num_players):
             player_name = 'Player ' + str(n + 1)        # players[0] is called 'Player 1', etc.
@@ -417,11 +421,31 @@ class Game:
 
             self.players.append(Player(player_name, colour, origin))    # Add each player to the list of players.
 
-        self.game_end_time = time.time() + 15
+        self.game_end_time = time.time() + 30                   # '30' is the length of the game in seconds.
 
     def draw_text(self, text, x, y, colour):
         textsurface = self.config.myfont.render(text, False, colour)
         self.config.screen.blit(textsurface, (x, y))
+
+    def draw_centred_white_text(self, text, position, y):
+        assert position in ['Centre', 'Left', 'Right']
+
+        pixels_per_char = 12                    # Width of 1 char of text of screen in Courier font.
+        if position == "Centre":
+            self.draw_text(text,
+                           int(self.config.screen_centre[0] - pixels_per_char * len(text) / 2),
+                           y,
+                           self.config.WHITE)
+        elif position == "Left":
+            self.draw_text(text,
+                           int(self.config.screen_size[0] * 0.25 - pixels_per_char * len(text) / 2),
+                           y,
+                           self.config.WHITE)
+        else:
+            self.draw_text(text,
+                           int(self.config.screen_size[0] * 0.75 - pixels_per_char * len(text) / 2),
+                           y,
+                           self.config.WHITE)
 
     # Draw the frames per second at the bottom left of the screen.
     def draw_fps(self):
@@ -447,18 +471,25 @@ class Game:
                                   c2)
 
         if not self.config.demo_mode:
-            self.draw_text('Time: ' + str(round(self.game_end_time - time.time())),
-                           self.config.screen_centre[0] - 20, 10, self.config.WHITE)
+            self.draw_centred_white_text('Time: ' + str(round(self.game_end_time - time.time())), 'Centre', 10)
 
+    # Draw instruction on screen during demo mode.
     def draw_demo_info(self):
-        self.draw_text('GAME OVER', self.config.screen_centre[0] - 50, self.config.screen_centre[1] + 50,
-                              self.config.WHITE)
-        self.draw_text('Press 1 for 1 player game', self.config.screen_centre[0] - 150,
-                              self.config.screen_centre[1] + 100, self.config.WHITE)
-        self.draw_text('Press 2 for 2 player game', self.config.screen_centre[0] - 150,
-                              self.config.screen_centre[1] + 125, self.config.WHITE)
+        self.draw_centred_white_text('GAME OVER', 'Centre', self.config.screen_centre[1] - 150)
+        self.draw_centred_white_text('Press 1 for 1 player game', 'Centre', self.config.screen_centre[1] - 100)
+        self.draw_centred_white_text('Press 2 for 2 player game', 'Centre', self.config.screen_centre[1] - 75)
 
-    # This one method coordinates the drawing of all of the graphical elements in the game.
+        self.draw_centred_white_text('Player 1', 'Left', self.config.screen_centre[1] + 50)
+        self.draw_centred_white_text('Z = Rotate anticlockwise', 'Left', self.config.screen_centre[1] + 75)
+        self.draw_centred_white_text('X = Rotate clockwise', 'Left', self.config.screen_centre[1] + 100)
+        self.draw_centred_white_text('A = Fire gun', 'Left', self.config.screen_centre[1] + 125)
+
+        self.draw_centred_white_text('Player 2', 'Right', self.config.screen_centre[1] + 50)
+        self.draw_centred_white_text('← = Rotate anticlockwise', 'Right', self.config.screen_centre[1] + 75)
+        self.draw_centred_white_text('→ = Rotate clockwise', 'Right', self.config.screen_centre[1] + 100)
+        self.draw_centred_white_text('/ = Fire gun', 'Right', self.config.screen_centre[1] + 125)
+
+    # This one method does the drawing of all of the graphical elements in the game.
     def draw_all_elements(self):
         # Clear the screen and set the screen background.
         self.config.screen.fill(self.config.BLACK)
@@ -484,6 +515,13 @@ class Game:
 
         pygame.display.flip()
 
+    # Take a screenshot. Save it in the 'screenshots' folder.
+    def take_screenshot(self):
+        screenshot_name = 'screenshots/screenshot' + format(self.config.screenshot_num, '04') + '.png'
+        pygame.image.save(self.config.screen, screenshot_name)
+        self.config.screenshot_num += 1
+
+    # Act on key presses bu game players.
     def key_handling(self):
         keys = pygame.key.get_pressed()
 
@@ -502,6 +540,16 @@ class Game:
             if keys[pygame.K_SLASH]:
                 self.players[1].ship.fire_bullet(self.config)   # Need config, as it contains the bullet firing sound.
 
+        if keys[pygame.K_g]:
+            self.take_screenshot()
+
+        if keys[pygame.K_ESCAPE]:
+            return True
+        else:
+            return False
+
+    # Do one tick of the game logic and drawing to screen, etc.
+    # If in demo mode, collision detection will be skipped.
     def animate_1_tick(self):
         # Ensure that the game ticks do not exceed the target FPS.
         self.config.clock.tick(self.config.target_fps)
@@ -573,9 +621,11 @@ class Game:
 
         self.draw_all_elements()
 
+    # Actually play the game.
     def play(self):
         done = False
         self.config.demo_mode = False           # This is not a demo, this is the real game.
+        self.config.monochrome = False          # Actual games are in colour.
 
         # Loop until the user clicks the close button, or game time is up.
         while not done:
@@ -588,7 +638,9 @@ class Game:
             if time.time() >= self.game_end_time:
                 done = True
 
-            self.key_handling()
+            escape_pressed = self.key_handling()
+            if escape_pressed:
+                done = True
 
             self.animate_1_tick()
 
@@ -604,7 +656,7 @@ class Config:
         self.debug = debug                  # True=logging sent to stdout, and current FPS displayed on screen.
         self.target_fps = target_fps        # Some game animations use target Frames Per Second to control their pace.
 
-        self.monochrome = False             # True=old style graphics used for rocks, etc.
+        self.monochrome = True              # True=old style graphics used for rocks, etc.
         self.num_players = 1
 
         self.demo_mode = True
@@ -654,6 +706,8 @@ class Config:
         self.right_dead = self.screen_size[0] + self.border
         self.bottom_dead = self.screen_size[1] + self.border
 
+        self.screenshot_num = 1                         # Number of screenshots taken.
+
     def choose_options(self):
         this_game = Game(self)
 
@@ -669,18 +723,17 @@ class Config:
                 this_game = Game(self)
                 this_game.play()
                 self.demo_mode = True
+                self.monochrome = True          # Demo mode is monochrome.
 
             if keys[pygame.K_2]:                # '2' key starts a two player game.
                 self.num_players = 2
                 this_game = Game(self)
                 this_game.play()
                 self.demo_mode = True
+                self.monochrome = True          # Demo mode is monochrome.
 
-            if keys[pygame.K_m]:                # 'm' key sets Monochrome mode.
-                self.monochrome = True
-
-            if keys[pygame.K_c]:                # 'c' key sets Colour mode.
-                self.monochrome = False
+            if keys[pygame.K_g]:
+                this_game.take_screenshot()
 
             if not self.quit:
                 this_game.animate_1_tick()
