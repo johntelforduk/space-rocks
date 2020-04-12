@@ -387,9 +387,9 @@ class Game:
         self.config = config
 
         # Create some rocks for start of game.
-        num_rocks = 20
+        self.num_rocks = 20                             # Target number of rocks to have on screen at once.
         self.rocks = []
-        for r in range(num_rocks):
+        for r in range(self.num_rocks):
             new_rock = Rock(self.config, 'Large')
             new_rock.place_on_side_of_screen(self.config)
             self.rocks.append(new_rock)
@@ -421,7 +421,7 @@ class Game:
 
             self.players.append(Player(player_name, colour, origin))    # Add each player to the list of players.
 
-        self.game_end_time = time.time() + 30                   # '30' is the length of the game in seconds.
+        self.game_end_time = time.time() + 60                   # '60' is the length of the game in seconds.
 
     def draw_text(self, text, x, y, colour):
         textsurface = self.config.myfont.render(text, False, colour)
@@ -604,7 +604,8 @@ class Game:
 
             if r.kill:
                 if r.exploding:  # Must have collided with something.
-                    if r.size == 'Large':  # Destroyed large rocks should be replaced by new large rocks.
+                    # If we are getting low on rocks, then create a new large rock.
+                    if len(self.rocks) <= self.num_rocks:
                         new_rock = Rock(self.config, 'Large')
                         new_rock.place_on_side_of_screen(self.config)
                         self.rocks.append(new_rock)
