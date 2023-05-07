@@ -1,4 +1,5 @@
 # space-rocks
+![status](https://img.shields.io/badge/status-ready%20to%20use-green)
 
 ![1 player animation](./screenshots/space_rocks_animation.gif)
 
