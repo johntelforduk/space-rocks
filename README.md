@@ -1,6 +1,6 @@
 # space-rocks
 
-![1 player game](https://github.com/johntelforduk/space-rocks/blob/master/screenshots/screenshot_0003.png)
+![1 player animation](./screenshots/space_rocks_animation.gif)
 
 #### Installation
 To install the necessary game module,
@@ -41,3 +41,5 @@ Used under creative commons license.
 https://freesound.org/people/sharesynth/sounds/341235/  
 https://freesound.org/people/ryansnook/sounds/110115/  
 https://freesound.org/people/tommccann/sounds/235968/
+
+![1 player screenshot](./screenshots/screenshot_0003.png)
